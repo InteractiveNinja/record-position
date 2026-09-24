@@ -1,42 +1,69 @@
-# sv
+# Positions-Tool
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+> **Warnung:** Dieses Projekt wurde (weitgehend) KI-generiert. Es besteht keine Garantie für die Qualität und Funktion des Codes.
 
-## Creating a project
+Mobile-first Web-App (SvelteKit 2 + Tailwind CSS 4 + Drizzle ORM / Postgres) zur Erfassung und Verwaltung von GPS-Positionen mit freitextiger Beschreibung.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Voraussetzungen
 
-```sh
-# create a new project
-npx sv create my-app
-```
+- Node.js (ESM, `type: module`)
+- Docker (für die lokale Postgres-Instanz)
 
-To recreate this project with the same configuration:
+## Setup
 
 ```sh
-# recreate this project
-npx sv@0.17.1 create --template minimal --types ts --add prettier tailwindcss="plugins:none" drizzle="database:postgresql+postgresql:postgres.js+docker:yes" --install npm record-position
+npm install
 ```
 
-## Developing
+### Datenbank
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Postgres läuft via Docker Compose (Credentiale in `compose.yaml`, Port 5432):
 
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+npm run db:start
 ```
 
-## Building
+### Umgebungsvariable
 
-To create a production version of your app:
+`DATABASE_URL` muss in `.env` gesetzt sein, z. B.:
+
+```
+DATABASE_URL=postgres://root:mysecretpassword@localhost:5432/local
+```
+
+Ohne `.env` werfen App und Drizzle-Skripte beim Start eine Fehlermeldung.
+
+### Schema anwenden
 
 ```sh
-npm run build
+npm run db:push        # Dev: Schema direkt auf die DB schieben
+# oder mit echten Migrationen:
+npm run db:generate && npm run db:migrate
 ```
 
-You can preview the production build with `npm run preview`.
+## Entwicklung
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```sh
+npm run dev            # Dev-Server
+npm run dev -- --open  # + Browser öffnen
+```
+
+Hinweis: Die App benötigt Browser-Standortzugriff (Geolocation API) — HTTPS oder `localhost`.
+
+## Produktion
+
+```sh
+npm run build          # Produktions-Build nach build/
+npm run preview        # Build lokal testen
+```
+
+Zum Deployen ggf. einen passenden [SvelteKit-Adapter](https://svelte.dev/docs/kit/adapters) für die Zielumgebung installieren (aktuell `adapter-auto`).
+
+## Nützliche Befehle
+
+```sh
+npm run check          # svelte-check / Typecheck
+npm run lint           # Prettier-Check
+npm run format         # Prettier-Formatierung
+npm run db:studio      # Drizzle Studio (Daten inspizieren)
+```
