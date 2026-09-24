@@ -1,0 +1,1 @@
+ALTER TABLE "position" ADD COLUMN "recordedAt" timestamp DEFAULT now() NOT NULL;

@@ -8,6 +8,13 @@
       "when": 1790239915498,
       "tag": "0000_volatile_kitty_pryde",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790282230703,
+      "tag": "0001_chief_the_renegades",
+      "breakpoints": true
     }
   ]
 }
