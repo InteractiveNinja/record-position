@@ -25,5 +25,5 @@ Order: `check` then `lint` (or just `format` and `check`). There is no test suit
 
 - Runes mode is enforced project-wide via `vite.config.ts` — write components with `$state`/`$derived`, not legacy stores.
 - Prettier: tabs, single quotes, no trailing commas, 100 width, svelte + tailwindcss plugins. Run `format` before committing.
-- Note: `prettier.config.js` references `./src/routes/layout.css` as the tailwind stylesheet, but only `page.css` exists — keep the two consistent when adding a layout.
+- `prettier.config.js` points `tailwindStylesheet` at `./src/routes/page.css` — keep it in sync if the stylesheet moves.
 - `adapter-auto` is used; switch adapter when targeting a specific deploy environment.

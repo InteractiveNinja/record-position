@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, doublePrecision } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, doublePrecision, timestamp } from 'drizzle-orm/pg-core';
 
 export const position = pgTable('position', {
 	id: serial('id').primaryKey(),
@@ -8,5 +8,6 @@ export const position = pgTable('position', {
 	accuracy: doublePrecision('accuracy').notNull(),
 	altitude: doublePrecision('altitude').notNull(),
 	altitudeAccuracy: doublePrecision('altitudeAccuracy').notNull(),
-	heading: doublePrecision('heading').notNull().default(1)
+	heading: doublePrecision('heading').notNull().default(1),
+	recordedAt: timestamp('recordedAt').notNull().defaultNow()
 });
