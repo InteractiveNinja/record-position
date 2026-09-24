@@ -285,7 +285,10 @@
 		{/if}
 	</section>
 
-	<footer class="mt-auto pb-2 text-center text-xs text-neutral-400">Version {data.version}</footer>
+	<footer class="mt-auto pb-2 text-center text-xs text-neutral-400">
+		Version {data.version}{#if data.commit}
+			· {data.commit.slice(0, 7)}{/if}
+	</footer>
 </div>
 
 {#if toast}

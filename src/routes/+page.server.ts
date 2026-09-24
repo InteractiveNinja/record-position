@@ -3,11 +3,12 @@ import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { position } from '$lib/server/db/schema';
+import { env } from '$env/dynamic/private';
 import pkg from '../../package.json';
 
 export const load: PageServerLoad = async () => {
 	const rows = await db.select().from(position).orderBy(desc(position.recordedAt));
-	return { positions: rows, version: pkg.version };
+	return { positions: rows, version: pkg.version, commit: env.CI_COMMIT_SHA };
 };
 
 export const actions: Actions = {

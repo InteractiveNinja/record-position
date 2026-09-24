@@ -57,7 +57,20 @@ npm run build          # Produktions-Build nach build/
 npm run preview        # Build lokal testen
 ```
 
-Zum Deployen ggf. einen passenden [SvelteKit-Adapter](https://svelte.dev/docs/kit/adapters) für die Zielumgebung installieren (aktuell `adapter-auto`).
+## Docker
+
+Die App lässt sich als Image bauen und starten (Adapter: `@sveltejs/adapter-node`, Port 3000):
+
+```sh
+docker build --build-arg CI_COMMIT_SHA=<commit> -t record-position .
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL=postgres://root:mysecretpassword@host.docker.internal:5432/local \
+  record-position
+```
+
+`CI_COMMIT_SHA` ist optional — ohne ihn zeigt der Footer nur die Version, mit ihm zusätzlich die kurze Commit-Hash.
+
+Die Datenbank bleibt extern — `DATABASE_URL` zeigt auf die erreichbare Postgres-Instanz (auf macOS/Windows für Compose-Container den Host via `host.docker.internal` ansprechen).
 
 ## Nützliche Befehle
 
