@@ -9,6 +9,18 @@
 	let position: GeolocationPosition | null = $state(null);
 	let geoError: string | null = $state(null);
 	let description = $state('');
+	let descInput: HTMLInputElement | undefined = $state();
+
+	const chips = [
+		'WC in ',
+		'Kaffemaschine in ',
+		'Essnische in ',
+		'Drucker in ',
+		'Bibliothek ',
+		'Sekretariat ',
+		'IT-Support ',
+		'Spind '
+	];
 
 	let toast: { message: string; type: 'success' | 'error' } | null = $state(null);
 	let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -35,6 +47,14 @@
 			geoError = 'Dieser Browser unterstützt keine Standortbestimmung.';
 		}
 	});
+
+	function applyChip(prefix: string) {
+		description = prefix;
+		requestAnimationFrame(() => {
+			descInput?.focus();
+			if (descInput) descInput.setSelectionRange(descInput.value.length, descInput.value.length);
+		});
+	}
 
 	function showToast(message: string, type: 'success' | 'error') {
 		toast = { message, type };
@@ -123,7 +143,19 @@
 				placeholder="Beschreibung"
 				class="w-full rounded-lg border border-neutral-300 px-3 py-2.5 text-base focus:border-neutral-500 focus:outline-none"
 				bind:value={description}
+				bind:this={descInput}
 			/>
+			<div class="mt-2 flex flex-wrap gap-2">
+				{#each chips as chip (chip)}
+					<button
+						type="button"
+						onclick={() => applyChip(chip)}
+						class="rounded-full border border-neutral-300 bg-neutral-50 px-3 py-1 text-sm text-neutral-700 hover:bg-neutral-100 active:bg-neutral-200"
+					>
+						{chip.trim()}
+					</button>
+				{/each}
+			</div>
 		</div>
 
 		<div class="rounded-lg bg-neutral-50 p-3">
@@ -252,6 +284,8 @@
 			</ul>
 		{/if}
 	</section>
+
+	<footer class="mt-auto pb-2 text-center text-xs text-neutral-400">Version {data.version}</footer>
 </div>
 
 {#if toast}
