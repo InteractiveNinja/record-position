@@ -16,6 +16,7 @@
 		'Kaffemaschine in ',
 		'Essnische in ',
 		'Drucker in ',
+		'Mikrowelle in ',
 		'Bibliothek ',
 		'Sekretariat ',
 		'IT-Support ',
