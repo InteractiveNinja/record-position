@@ -3,8 +3,11 @@
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import type { ActionResult } from '@sveltejs/kit';
+	import { haversineMeters } from '$lib/index';
 
 	let { data } = $props();
+
+	const NEAR_RADIUS_M = 10;
 
 	let position: GeolocationPosition | null = $state(null);
 	let geoError: string | null = $state(null);
@@ -87,6 +90,24 @@
 	function cancelEdit() {
 		editingId = null;
 		editDescription = '';
+	}
+
+	let nearby = $derived.by(() => {
+		if (!position) return [];
+		const { latitude, longitude } = position.coords;
+		return data.positions
+			.map((row) => ({
+				row,
+				distance: haversineMeters(latitude, longitude, row.latitude, row.longitude)
+			}))
+			.filter((n) => n.distance <= NEAR_RADIUS_M && n.row.id !== editingId)
+			.sort((a, b) => a.distance - b.distance);
+	});
+
+	let nearbyIds = $derived(new Set(nearby.map((n) => n.row.id)));
+
+	function distanceFor(id: number): number {
+		return nearby.find((n) => n.row.id === id)?.distance ?? 0;
 	}
 
 	function confirmDelete(id: number, desc: string) {
@@ -179,6 +200,19 @@
 			{/if}
 		</div>
 
+		{#if nearby.length > 0}
+			<div class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+				<p class="font-semibold">
+					Achtung: {nearby.length} Eintrag{nearby.length > 1 ? 'e' : ''} in der Nähe
+				</p>
+				<ul class="mt-1">
+					{#each nearby as n (n.row.id)}
+						<li>{n.row.description} · {Math.round(n.distance)} m</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
+
 		<input type="hidden" name="latitude" value={position?.coords.latitude ?? ''} />
 		<input type="hidden" name="longitude" value={position?.coords.longitude ?? ''} />
 		<input type="hidden" name="accuracy" value={position?.coords.accuracy ?? ''} />
@@ -206,7 +240,11 @@
 		{:else}
 			<ul class="flex flex-col gap-3">
 				{#each data.positions as row (row.id)}
-					<li class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+					<li
+						class={nearbyIds.has(row.id)
+							? 'rounded-xl border border-amber-400 bg-amber-50 p-4 shadow-sm'
+							: 'rounded-xl border border-neutral-200 bg-white p-4 shadow-sm'}
+					>
 						{#if editingId === row.id}
 							<form
 								method="POST"
@@ -244,7 +282,16 @@
 							</form>
 						{:else}
 							<div class="flex items-start justify-between gap-2">
-								<p class="font-medium">{row.description}</p>
+								<div class="flex flex-wrap items-center gap-2">
+									<p class="font-medium">{row.description}</p>
+									{#if nearbyIds.has(row.id)}
+										<span
+											class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800"
+										>
+											Möglicher Duplikat · {Math.round(distanceFor(row.id))} m
+										</span>
+									{/if}
+								</div>
 								<span class="shrink-0 text-xs text-neutral-400">{formatDate(row.recordedAt)}</span>
 							</div>
 							<p class="mt-1 font-mono text-xs text-neutral-500">
