@@ -4,6 +4,8 @@
 
 Mobile-first Web-App (SvelteKit 2 + Tailwind CSS 4 + Drizzle ORM / Postgres) zur Erfassung und Verwaltung von GPS-Positionen mit freitextiger Beschreibung.
 
+Die gespeicherten Positionen werden automatisch nach Standorten gruppiert: Ein Code im Format `Gebäude.Ebene+Sektor` (z. B. `6.4A`) in der Beschreibung wird erkannt und als Gruppenüberschrift („Gebäude 6 · Ebene 4 · Sektor A") angezeigt. Positionen ohne erkannten Code landen in der Gruppe „Ungrouped" (Logik: `src/lib/location.ts`).
+
 ## Voraussetzungen
 
 - Node.js (ESM, `type: module`)

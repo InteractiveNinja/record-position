@@ -4,6 +4,8 @@
 	import { enhance } from '$app/forms';
 	import type { ActionResult } from '@sveltejs/kit';
 	import { haversineMeters } from '$lib/index';
+	import { parseLocationCode, locationKey, locationLabel, sortLocations } from '$lib/location';
+	import type { ParsedLocation } from '$lib/location';
 
 	let { data } = $props();
 
@@ -105,6 +107,44 @@
 	});
 
 	let nearbyIds = $derived(new Set(nearby.map((n) => n.row.id)));
+
+	interface LocationGroup {
+		key: string;
+		code?: string;
+		label?: string;
+		positions: typeof data.positions;
+	}
+
+	const UNGROUPED_KEY = '__ungrouped__';
+
+	let groups: LocationGroup[] = $derived.by(() => {
+		const byKey = new Map<string, LocationGroup>();
+		const order: ParsedLocation[] = [];
+
+		for (const row of data.positions) {
+			const loc = parseLocationCode(row.description);
+			const key = loc ? locationKey(loc) : UNGROUPED_KEY;
+			let group = byKey.get(key);
+			if (!group) {
+				group = loc
+					? {
+							key,
+							code: `${loc.building}.${loc.floor}${loc.sector}`,
+							label: locationLabel(loc),
+							positions: []
+						}
+					: { key, label: 'Ungrouped', positions: [] };
+				byKey.set(key, group);
+				if (loc) order.push(loc);
+			}
+			group.positions.push(row);
+		}
+
+		order.sort(sortLocations);
+		const sorted = order.map((loc) => byKey.get(locationKey(loc))!);
+		const ungrouped = byKey.get(UNGROUPED_KEY);
+		return ungrouped ? [...sorted, ungrouped] : sorted;
+	});
 
 	function distanceFor(id: number): number {
 		return nearby.find((n) => n.row.id === id)?.distance ?? 0;
@@ -238,98 +278,112 @@
 				Noch keine Positionen erfasst.
 			</p>
 		{:else}
-			<ul class="flex flex-col gap-3">
-				{#each data.positions as row (row.id)}
-					<li
-						class={nearbyIds.has(row.id)
-							? 'rounded-xl border border-amber-400 bg-amber-50 p-4 shadow-sm'
-							: 'rounded-xl border border-neutral-200 bg-white p-4 shadow-sm'}
-					>
-						{#if editingId === row.id}
-							<form
-								method="POST"
-								action="?/edit"
-								class="flex flex-col gap-2"
-								use:enhance={() =>
-									async ({ result, update }) => {
-										await update();
-										if (handleResult(result)) cancelEdit();
-									}}
-							>
-								<input type="hidden" name="id" value={row.id} />
-								<input
-									name="description"
-									type="text"
-									class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-base focus:border-neutral-500 focus:outline-none"
-									bind:value={editDescription}
-									bind:this={editInput}
-								/>
-								<div class="flex gap-2">
-									<button
-										type="submit"
-										class="flex-1 rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-700"
-									>
-										Speichern
-									</button>
-									<button
-										type="button"
-										onclick={cancelEdit}
-										class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium hover:bg-neutral-50"
-									>
-										Abbrechen
-									</button>
-								</div>
-							</form>
-						{:else}
-							<div class="flex items-start justify-between gap-2">
-								<div class="flex flex-wrap items-center gap-2">
-									<p class="font-medium">{row.description}</p>
-									{#if nearbyIds.has(row.id)}
-										<span
-											class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800"
+			<div class="flex flex-col gap-6">
+				{#each groups as group (group.key)}
+					<div>
+						<h3 class="mb-2 text-base font-semibold text-neutral-800">
+							{#if group.code}<span class="font-bold">{group.code}</span> —
+							{/if}
+							{group.label}
+						</h3>
+						<ul class="flex flex-col gap-3">
+							{#each group.positions as row (row.id)}
+								<li
+									class={nearbyIds.has(row.id)
+										? 'rounded-xl border border-amber-400 bg-amber-50 p-4 shadow-sm'
+										: 'rounded-xl border border-neutral-200 bg-white p-4 shadow-sm'}
+								>
+									{#if editingId === row.id}
+										<form
+											method="POST"
+											action="?/edit"
+											class="flex flex-col gap-2"
+											use:enhance={() =>
+												async ({ result, update }) => {
+													await update();
+													if (handleResult(result)) cancelEdit();
+												}}
 										>
-											Möglicher Duplikat · {Math.round(distanceFor(row.id))} m
-										</span>
+											<input type="hidden" name="id" value={row.id} />
+											<input
+												name="description"
+												type="text"
+												class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-base focus:border-neutral-500 focus:outline-none"
+												bind:value={editDescription}
+												bind:this={editInput}
+											/>
+											<div class="flex gap-2">
+												<button
+													type="submit"
+													class="flex-1 rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-700"
+												>
+													Speichern
+												</button>
+												<button
+													type="button"
+													onclick={cancelEdit}
+													class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium hover:bg-neutral-50"
+												>
+													Abbrechen
+												</button>
+											</div>
+										</form>
+									{:else}
+										<div class="flex items-start justify-between gap-2">
+											<div class="flex flex-wrap items-center gap-2">
+												<p class="font-medium">{row.description}</p>
+												{#if nearbyIds.has(row.id)}
+													<span
+														class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800"
+													>
+														Möglicher Duplikat · {Math.round(distanceFor(row.id))} m
+													</span>
+												{/if}
+											</div>
+											<span class="shrink-0 text-xs text-neutral-400"
+												>{formatDate(row.recordedAt)}</span
+											>
+										</div>
+										<p class="mt-1 font-mono text-xs text-neutral-500">
+											{coord(row.latitude)}, {coord(row.longitude)} · ±{meter(row.accuracy)}
+										</p>
+										<div class="mt-3 flex gap-2">
+											<button
+												type="button"
+												onclick={() => startEdit(row.id, row.description)}
+												class="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50"
+											>
+												Bearbeiten
+											</button>
+											<form
+												method="POST"
+												action="?/delete"
+												use:enhance={() =>
+													async ({ update }) => {
+														await update();
+														showToast('Eintrag gelöscht.', 'success');
+													}}
+											>
+												<input type="hidden" name="id" value={row.id} />
+												<button
+													type="submit"
+													onclick={() => {
+														if (!confirmDelete(row.id, row.description))
+															throw { preventChange: true };
+													}}
+													class="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+												>
+													Löschen
+												</button>
+											</form>
+										</div>
 									{/if}
-								</div>
-								<span class="shrink-0 text-xs text-neutral-400">{formatDate(row.recordedAt)}</span>
-							</div>
-							<p class="mt-1 font-mono text-xs text-neutral-500">
-								{coord(row.latitude)}, {coord(row.longitude)} · ±{meter(row.accuracy)}
-							</p>
-							<div class="mt-3 flex gap-2">
-								<button
-									type="button"
-									onclick={() => startEdit(row.id, row.description)}
-									class="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50"
-								>
-									Bearbeiten
-								</button>
-								<form
-									method="POST"
-									action="?/delete"
-									use:enhance={() =>
-										async ({ update }) => {
-											await update();
-											showToast('Eintrag gelöscht.', 'success');
-										}}
-								>
-									<input type="hidden" name="id" value={row.id} />
-									<button
-										type="submit"
-										onclick={() => {
-											if (!confirmDelete(row.id, row.description)) throw { preventChange: true };
-										}}
-										class="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-									>
-										Löschen
-									</button>
-								</form>
-							</div>
-						{/if}
-					</li>
+								</li>
+							{/each}
+						</ul>
+					</div>
 				{/each}
-			</ul>
+			</div>
 		{/if}
 	</section>
 
