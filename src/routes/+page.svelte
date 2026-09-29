@@ -20,10 +20,10 @@
 		'Essnische in ',
 		'Drucker in ',
 		'Mikrowelle in ',
-		'Bibliothek ',
-		'Sekretariat ',
-		'IT-Support ',
-		'Spind '
+		'Bibliothek',
+		'Sekretariat',
+		'IT-Support',
+		'Spind in'
 	];
 
 	let toast: { message: string; type: 'success' | 'error' } | null = $state(null);
