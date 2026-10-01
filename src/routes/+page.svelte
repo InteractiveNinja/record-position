@@ -129,7 +129,7 @@
 				group = loc
 					? {
 							key,
-							code: `${loc.building}.${loc.floor}${loc.sector}`,
+							code: `${loc.building}.${loc.floor}${loc.sector ?? ''}`,
 							label: locationLabel(loc),
 							positions: []
 						}
